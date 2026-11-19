@@ -139,6 +139,12 @@ async function getModel() {
       const modeKey = els.inferenceMode.value;
       if (aiModule.InferenceMode && aiModule.InferenceMode[modeKey]) {
         params.mode = aiModule.InferenceMode[modeKey];
+        // When a mode is set, the SDK ignores the top-level `model` and
+        // uses its built-in default cloud model — which in SDK 12.5.0 is
+        // the retired gemini-2.0-flash-lite (HTTP 404). Per the Firebase
+        // AI Logic hybrid configuration docs, the cloud-hosted model for
+        // mode-based requests is set via inCloudParams.
+        params.inCloudParams = { model: CLOUD_MODEL };
       }
       return aiModule.getGenerativeModel(ai, params);
     })();
