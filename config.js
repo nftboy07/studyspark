@@ -26,3 +26,10 @@ window.STUDYSPARK_FIREBASE_CONFIG = {
 // Cloud model used when Firebase AI Logic routes a request to the cloud
 // (and the model family paired with on-device Gemini Nano in hybrid mode).
 window.STUDYSPARK_CLOUD_MODEL = "gemini-2.5-flash";
+
+// Firebase App Check — reCAPTCHA site key for the Fraud Defense
+// (reCAPTCHA Enterprise) provider. Public by design; registration lives in
+// the Firebase console's App Check page. The project enforces App Check
+// for AI Logic: without this key the app cannot obtain an App Check token
+// and live calls fail with HTTP 401.
+window.STUDYSPARK_RECAPTCHA_SITE_KEY = "6LewnyguAAAAAOY7ssuS3QvMSpFP01HhWrx24-7_";
