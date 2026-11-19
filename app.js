@@ -118,6 +118,20 @@ async function getModel() {
       const aiModule = await import(`${GSTATIC}/firebase-ai.js`);
 
       const app = appModule.initializeApp(firebaseConfig);
+
+      // Firebase App Check: the project enforces App Check for AI Logic,
+      // so requests without a valid token are rejected with HTTP 401.
+      // When a reCAPTCHA v3 site key is configured, initialize App Check
+      // before any AI call so every request carries a token.
+      const siteKey = window.STUDYSPARK_RECAPTCHA_SITE_KEY;
+      if (siteKey) {
+        const appCheckModule = await import(`${GSTATIC}/firebase-app-check.js`);
+        appCheckModule.initializeAppCheck(app, {
+          provider: new appCheckModule.ReCaptchaEnterpriseProvider(siteKey),
+          isTokenAutoRefreshEnabled: true
+        });
+      }
+
       const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend() });
 
       const params = { model: CLOUD_MODEL };
