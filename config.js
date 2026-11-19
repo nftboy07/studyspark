@@ -25,7 +25,7 @@ window.STUDYSPARK_FIREBASE_CONFIG = {
 
 // Cloud model used when Firebase AI Logic routes a request to the cloud
 // (and the model family paired with on-device Gemini Nano in hybrid mode).
-window.STUDYSPARK_CLOUD_MODEL = "gemini-3.8-flash";
+window.STUDYSPARK_CLOUD_MODEL = "gemini-3.5-flash-lite";
 
 // Firebase App Check — reCAPTCHA site key for the Fraud Defense
 // (reCAPTCHA Enterprise) provider. Public by design; registration lives in
