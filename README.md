@@ -32,14 +32,14 @@ import { getAI, getGenerativeModel, GoogleAIBackend, InferenceMode }
 const app = initializeApp(firebaseConfig);
 const ai = getAI(app, { backend: new GoogleAIBackend() });
 const model = getGenerativeModel(ai, {
-  model: "gemini-2.5-flash",
-  mode: InferenceMode.PREFER_ON_DEVICE   // ← the hybrid switch
+  mode: InferenceMode.PREFER_ON_DEVICE,          // ← the hybrid switch
+  inCloudParams: { model: "gemini-3.5-flash-lite" } // cloud model for mode-based requests
 });
 const result = await model.generateContent(prompt);
 ```
 
 - **On-device path:** On Chrome desktop (v139+) with Gemini Nano available, the SDK serves the request locally through Chrome's built-in model (Prompt API). The text never leaves the machine — faster, offline-capable, and private.
-- **Cloud fallback:** When no on-device model is available (other browsers, unsupported hardware, model not yet downloaded), the *same* `generateContent()` call is served by cloud **Gemini 2.5 Flash** through Firebase AI Logic. No code changes, no API key embedded in the page — Firebase AI Logic brokers the request (with App Check protecting it).
+- **Cloud fallback:** When no on-device model is available (other browsers, unsupported hardware, model not yet downloaded), the *same* `generateContent()` call is served by the cloud model configured in `config.js` (currently **Gemini 3.5 Flash-Lite**, passed via `inCloudParams`) through Firebase AI Logic. No code changes, no API key embedded in the page — Firebase AI Logic brokers the request (with App Check protecting it).
 - **The other modes** map to the remaining `InferenceMode` values: `PREFER_IN_CLOUD`, `ONLY_ON_DEVICE` (throws if Nano is unavailable), and `ONLY_IN_CLOUD`.
 
 All three features (summary, flashcards, quiz) are single-turn text generation — exactly the workload on-device inference supports — and the structured outputs (flashcards and quiz) are requested as JSON and parsed defensively in the client.
@@ -61,7 +61,7 @@ No build step. The app is plain HTML/CSS/JS.
 
 ## Demo mode — honest disclosure
 
-This repository ships with **placeholder config values**, so out of the box the app runs in **demo mode**:
+The **public demo deployment ships the project's real Firebase web config** (public-by-design values, protected by App Check + Firebase security rules), so the live site generates everything live. A **fresh clone with placeholder config values** instead runs in **demo mode**:
 
 - A banner states plainly: *"Demo mode — connect Firebase to go live."*
 - **No SDK is loaded and no AI call is made.**
@@ -75,14 +75,14 @@ Once a real Firebase config is pasted into `config.js`, demo mode switches off a
 | --- | --- |
 | `index.html` | Page structure and UI |
 | `styles.css` | All styling (no frameworks, no external assets) |
-| `config.js` | Firebase config (placeholders — replace to go live) + cloud model name |
+| `config.js` | Firebase config + cloud model name (the public demo ships the real public-by-design web config; replace with placeholders to force demo mode) |
 | `app.js` | Firebase AI Logic integration, demo-mode logic, rendering, quiz scoring |
 | `SUBMISSION.md` | Devpost submission draft and pre-submit checklist |
 
 ## Tech
 
 - **Firebase AI Logic** (web SDK, `firebase/ai`) — the only AI path, per the hackathon rules
-- **Gemini Nano** (on-device, via Chrome's Prompt API through the SDK) + **Gemini 2.5 Flash** (cloud)
+- **Gemini Nano** (on-device, via Chrome's Prompt API through the SDK) + **Gemini 3.5 Flash-Lite** (cloud, via `inCloudParams`)
 - Vanilla HTML/CSS/JS — no framework, no bundler, no build step
 - Static hosting anywhere (Firebase Hosting / GitHub Pages / any file server)
 
