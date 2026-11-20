@@ -79,6 +79,18 @@ Once a real Firebase config is pasted into `config.js`, demo mode switches off a
 | `app.js` | Firebase AI Logic integration, demo-mode logic, rendering, quiz scoring |
 | `SUBMISSION.md` | Devpost submission draft and pre-submit checklist |
 
+## Tests
+
+End-to-end tests use Playwright and mock Gemini responses, so they need no AI calls or App Check token:
+
+```bash
+npm ci
+npx playwright install chromium
+npm test
+```
+
+They also run in GitHub Actions on every push to `main` and every pull request.
+
 ## Tech
 
 - **Firebase AI Logic** (web SDK, `firebase/ai`) — the only AI path, per the hackathon rules
