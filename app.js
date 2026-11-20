@@ -109,34 +109,81 @@ const DEMO_RESULT = {
 // ── Firebase AI Logic (live mode) ────────────────────────────────────────────
 
 let modelPromise = null;
+let appCheckInitialized = false;
+let inferenceNote = "";
+
+// Some Chrome builds expose the Prompt API but never settle
+// LanguageModel.availability(). The SDK awaits that call before choosing a
+// route, so without a time limit "prefer on-device" would wait forever.
+const ON_DEVICE_CHECK_TIMEOUT_MS = 5000;
+let onDeviceCheckPromise = null;
+
+function checkOnDeviceAvailability() {
+  if (!onDeviceCheckPromise) {
+    onDeviceCheckPromise = (async () => {
+      if (typeof LanguageModel === "undefined") return "unavailable";
+      let timer;
+      const timeout = new Promise((resolve) => {
+        timer = setTimeout(() => resolve("timeout"), ON_DEVICE_CHECK_TIMEOUT_MS);
+      });
+      try {
+        return await Promise.race([
+          LanguageModel.availability().then(String, () => "unavailable"),
+          timeout
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+  }
+  return onDeviceCheckPromise;
+}
+
+// Pick the InferenceMode to hand the SDK. If the on-device check hangs, any
+// mode that may consult Gemini Nano is routed to cloud only (or fails fast
+// for "on-device only") instead of leaving the UI stuck.
+async function resolveInferenceMode(modeKey) {
+  inferenceNote = "";
+  if (modeKey === "ONLY_IN_CLOUD") return modeKey;
+  if ((await checkOnDeviceAvailability()) !== "timeout") return modeKey;
+  const seconds = ON_DEVICE_CHECK_TIMEOUT_MS / 1000;
+  if (modeKey === "ONLY_ON_DEVICE") {
+    throw new Error(
+      `On-device Gemini Nano did not respond within ${seconds} s. Pick a mode that allows cloud Gemini`
+    );
+  }
+  inferenceNote = `on-device check timed out after ${seconds} s, so cloud Gemini was used`;
+  return "ONLY_IN_CLOUD";
+}
 
 async function getModel() {
   if (!modelPromise) {
-    modelPromise = (async () => {
+    const pending = (async () => {
       // Dynamic imports keep demo mode completely free of network/SDK loads.
       const appModule = await import(`${GSTATIC}/firebase-app.js`);
       const aiModule = await import(`${GSTATIC}/firebase-ai.js`);
 
-      const app = appModule.initializeApp(firebaseConfig);
+      const app = appModule.getApps().length ? appModule.getApp() : appModule.initializeApp(firebaseConfig);
 
       // Firebase App Check: the project enforces App Check for AI Logic,
       // so requests without a valid token are rejected with HTTP 401.
       // When a reCAPTCHA v3 site key is configured, initialize App Check
       // before any AI call so every request carries a token.
       const siteKey = window.STUDYSPARK_RECAPTCHA_SITE_KEY;
-      if (siteKey) {
+      if (siteKey && !appCheckInitialized) {
         const appCheckModule = await import(`${GSTATIC}/firebase-app-check.js`);
         appCheckModule.initializeAppCheck(app, {
           provider: new appCheckModule.ReCaptchaEnterpriseProvider(siteKey),
           isTokenAutoRefreshEnabled: true
         });
+        appCheckInitialized = true;
       }
 
       const ai = aiModule.getAI(app, { backend: new aiModule.GoogleAIBackend() });
 
       const params = { model: CLOUD_MODEL };
       // Hybrid inference: prefer on-device Gemini Nano, fall back to cloud.
-      const modeKey = els.inferenceMode.value;
+      const modeKey = await resolveInferenceMode(els.inferenceMode.value);
       if (aiModule.InferenceMode && aiModule.InferenceMode[modeKey]) {
         params.mode = aiModule.InferenceMode[modeKey];
         // When a mode is set, the SDK ignores the top-level `model` and
@@ -148,6 +195,9 @@ async function getModel() {
       }
       return aiModule.getGenerativeModel(ai, params);
     })();
+    modelPromise = pending;
+    // Don't cache a failure: the next click should retry.
+    pending.catch(() => { if (modelPromise === pending) modelPromise = null; });
   }
   return modelPromise;
 }
@@ -321,7 +371,9 @@ async function onGenerate() {
       setStatus("Generating with Firebase AI Logic — hybrid inference (on-device Gemini Nano when available, cloud Gemini fallback)…");
       const result = await generateLive(text);
       renderResult(result, false);
-      setStatus("Done — generated live with Firebase AI Logic.");
+      setStatus(
+        "Done — generated live with Firebase AI Logic" + (inferenceNote ? ` (${inferenceNote}).` : ".")
+      );
     }
   } catch (err) {
     console.error(err);
