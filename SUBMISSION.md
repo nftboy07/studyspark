@@ -23,21 +23,21 @@ Studying from raw notes is slow: the chapter is long, the exam is close, and tur
 - 🃏 **Six flashcards** you can flip through
 - ❓ **A five-question quiz** with instant scoring and explanations
 
-Every AI call goes through **Firebase AI Logic** — and StudySpark is built around the feature this hackathon is about: **hybrid inference**. Using `InferenceMode.PREFER_ON_DEVICE`, the Firebase AI Logic web SDK serves requests with **Gemini Nano on-device** (Chrome desktop, via the Prompt API) whenever it's available — private, fast, and offline-capable — and **seamlessly falls back to cloud Gemini 2.5 Flash** when it isn't. Same code path, no embedded API key.
+Every AI call goes through **Firebase AI Logic** — and StudySpark is built around the feature this hackathon is about: **hybrid inference**. Using `InferenceMode.PREFER_ON_DEVICE`, the Firebase AI Logic web SDK serves requests with **Gemini Nano on-device** (Chrome desktop, via the Prompt API) whenever it's available — private, fast, and offline-capable — and **seamlessly falls back to cloud Gemini 3.5 Flash-Lite** (set via `inCloudParams`) when it isn't. Same code path, no embedded API key.
 
 To make the hybrid behaviour tangible, StudySpark includes an **inference-mode selector**: judges can switch between prefer-on-device, prefer-cloud, on-device-only, and cloud-only and regenerate the same study set each way.
 
 The app is deliberately dependency-light: plain HTML/CSS/JS, no build step, hosted as static files. It stores nothing — no accounts, no database — so student text lives only in the page (and, on the on-device path, never leaves the machine at all).
 
-**Honest note on the demo:** the public demo link runs with a real Firebase project config, so all output is generated live from whatever text you paste. The source repository ships with placeholder config and an unmistakable demo mode (banner + "Sample output" labels + canned photosynthesis study set) so anyone can explore the UI before connecting Firebase — no fake AI anywhere.
+**Honest note on the demo:** the public demo link runs with a real Firebase project config, so all output is generated live from whatever text you paste. The shipped config values are Firebase's public-by-design web identifiers, protected by App Check (Fraud Defense / reCAPTCHA Enterprise) and Firebase rules. If you swap in placeholder config values, the app drops into an unmistakable demo mode (banner + "Sample output" labels + canned photosynthesis study set) so anyone can explore the UI before connecting Firebase — no fake AI anywhere.
 
 ## Tech list
 
 - Firebase AI Logic (web SDK — `firebase/ai`, Gemini Developer API backend)
 - Gemini Nano (on-device, via Chrome Prompt API through Firebase AI Logic)
-- Gemini 2.5 Flash (cloud fallback)
+- Gemini 3.5 Flash-Lite (cloud fallback, via `inCloudParams`)
 - Vanilla HTML / CSS / JavaScript (ES modules from the official Firebase CDN)
-- Firebase Hosting (or any static host)
+- GitHub Pages (static hosting)
 
 ## Try it / demo instructions for judges
 
@@ -53,14 +53,15 @@ Public GitHub repo containing `index.html`, `styles.css`, `config.js`, `app.js`,
 
 ---
 
-## Pre-submit checklist (owner/parent steps — NOT done by the builder agent)
+## Pre-submit checklist (status as of 20 Nov 2026)
 
-- [ ] Create the Firebase project under the owner's Google account (console.firebase.google.com)
-- [ ] Enable **AI Logic** in that project (Build → AI Logic, Gemini Developer API backend; accept App Check enforcement if prompted)
-- [ ] Register a Web app in the project and copy its `firebaseConfig`
-- [ ] Paste the real values into `config.js` (replace every `REPLACE_ME`), confirm the site badge reads **"Live — Firebase AI Logic"** and a live generation succeeds
-- [ ] Make the GitHub repo public and push these files
-- [ ] Deploy the static site (Firebase Hosting or GitHub Pages) and verify the live URL end-to-end (generate a study set from fresh text)
+- [x] Create the Firebase project under the owner's Google account — **StudySpark (studyspark-1157b)**
+- [x] Enable **AI Logic** in that project (Gemini Developer API backend; App Check enforcement on)
+- [x] Register a Web app in the project and copy its `firebaseConfig`
+- [x] Paste the real values into `config.js`, badge reads **"Live — Firebase AI Logic"**, live generation verified in both Hybrid and Cloud-only modes (20 Nov)
+- [x] App Check: Fraud Defense (reCAPTCHA Enterprise) provider registered; `initializeAppCheck` runs before AI calls
+- [x] GitHub repo public: https://github.com/nftboy07/studyspark
+- [x] Deployed to GitHub Pages and verified end-to-end: https://nftboy07.github.io/studyspark/
 - [ ] Record the demo video (show: paste text → generate → flip flashcards → take quiz → point out the inference-mode selector and, if available, on-device generation in Chrome)
 - [ ] Upload the video (e.g. YouTube, public/unlisted per Devpost rules) and add the link to the Devpost project
 - [ ] Submit the project on the BuildHybridAI Devpost page before **1 Dec 2026, 03:30 IST** (title, one-liner, description, tech list, repo link, demo link, video link)
